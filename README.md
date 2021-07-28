@@ -8,7 +8,7 @@ Move the [jar file](https://github.com/WiredSpast/OutfitRandomizer/releases) int
 ### :outfit
 Get random outfit
 
-#### Get random outfit in current gender (random gender if gender unknown)
+Get random outfit in current gender (random gender if gender unknown)
 ```
 :outfit
 ```
@@ -27,5 +27,12 @@ Get random outfit in female gender
 
 ### :outfit copy
 Copy outfit from user in room
-- :outfit copy -> Copy outfit from last clicked user
-- :outfit copy <name> -> Copy outfit from user with name (user has to be in the same room)
+
+Copy outfit from last clicked user
+```
+:outfit copy
+```
+Copy outfit from user with name (user has to be in the same room)
+```
+:outfit copy <name>
+```
