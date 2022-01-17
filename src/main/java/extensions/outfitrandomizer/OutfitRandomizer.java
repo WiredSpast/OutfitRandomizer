@@ -2,7 +2,6 @@ package extensions.outfitrandomizer;
 
 import gearth.extensions.Extension;
 import gearth.extensions.ExtensionInfo;
-import gearth.extensions.extra.tools.PacketInfoSupport;
 import gearth.extensions.parsers.HEntity;
 import gearth.extensions.parsers.HEntityType;
 import gearth.extensions.parsers.HGender;
@@ -23,15 +22,14 @@ import java.util.stream.Collectors;
 @ExtensionInfo(
         Title = "OutfitRandomizer",
         Description = "Randomize outfit",
-        Version = "0.1",
+        Version = "0.2",
         Author = "WiredSpast"
 )
 public class OutfitRandomizer extends Extension {
-    private PacketInfoSupport packetInfoSupport;
-
     private JSONObject figureDataJson;
     private final List<Integer> ownedSellableIds = new ArrayList<>();
     private boolean isHCMember = false;
+    private boolean checkedHCMemberShip = false;
     private HGender currentGender = HGender.Unisex;
     private Random random;
 
@@ -53,17 +51,15 @@ public class OutfitRandomizer extends Extension {
     protected void initExtension() {
         this.onConnect(this::onConnect);
 
-        packetInfoSupport = new PacketInfoSupport(this);
+        intercept(HMessage.Direction.TOSERVER, "Chat", this::onChatSend);
+        intercept(HMessage.Direction.TOSERVER, "GetSelectedBadges", this::onGetSelectedBadges);
 
-        packetInfoSupport.intercept(HMessage.Direction.TOSERVER, "Chat", this::onChatSend);
-        packetInfoSupport.intercept(HMessage.Direction.TOSERVER, "GetSelectedBadges", this::onGetSelectedBadges);
-
-        packetInfoSupport.intercept(HMessage.Direction.TOCLIENT, "FigureSetIds", this::onFigureSetIds);
-        packetInfoSupport.intercept(HMessage.Direction.TOCLIENT, "ScrSendUserInfo", this::onScrSendUserInfo);
-        packetInfoSupport.intercept(HMessage.Direction.TOCLIENT, "RoomReady", this::onRoomReady);
-        packetInfoSupport.intercept(HMessage.Direction.TOCLIENT, "Users", this::onUsers);
-        packetInfoSupport.intercept(HMessage.Direction.TOCLIENT, "UserChange", this::onUserChange);
-        packetInfoSupport.intercept(HMessage.Direction.TOCLIENT, "UserRemove", this::onUserRemove);
+        intercept(HMessage.Direction.TOCLIENT, "FigureSetIds", this::onFigureSetIds);
+        intercept(HMessage.Direction.TOCLIENT, "ScrSendUserInfo", this::onScrSendUserInfo);
+        intercept(HMessage.Direction.TOCLIENT, "RoomReady", this::onRoomReady);
+        intercept(HMessage.Direction.TOCLIENT, "Users", this::onUsers);
+        intercept(HMessage.Direction.TOCLIENT, "UserChange", this::onUserChange);
+        intercept(HMessage.Direction.TOCLIENT, "UserRemove", this::onUserRemove);
 
         random = new Random();
     }
@@ -87,9 +83,9 @@ public class OutfitRandomizer extends Extension {
                 }
 
                 if(users.containsKey(selectedIndex)) {
-                    packetInfoSupport.sendToServer("UpdateFigureData", userGenders.get(selectedIndex).toString(), userFigures.get(selectedIndex));
+                    sendToServer(new HPacket("UpdateFigureData", HMessage.Direction.TOSERVER, userGenders.get(selectedIndex).toString(), userFigures.get(selectedIndex)));
                 } else {
-                    packetInfoSupport.sendToServer("Whisper", "x Couldn't find user " + msg + " in room!", 0);
+                    sendToServer(new HPacket("Whisper", HMessage.Direction.TOSERVER, "x Couldn't find user " + msg + " in room!", 0));
                 }
             } else {
                 if(msg.length() > 0) {
@@ -103,7 +99,7 @@ public class OutfitRandomizer extends Extension {
                 }
 
                 String figureString = getRandomFigure(currentGender);
-                packetInfoSupport.sendToServer("UpdateFigureData", currentGender.toString(), figureString);
+                sendToServer(new HPacket("UpdateFigureData", HMessage.Direction.TOSERVER, currentGender.toString(), figureString));
             }
         }
     }
@@ -139,6 +135,11 @@ public class OutfitRandomizer extends Extension {
         users.clear();
         userFigures.clear();
         userGenders.clear();
+
+        if(!checkedHCMemberShip) {
+            sendToServer(new HPacket("ScrGetUserInfo", HMessage.Direction.TOSERVER, "habbo_club"));
+            checkedHCMemberShip = true;
+        }
     }
 
     private void onUsers(HMessage hMessage) {
@@ -167,7 +168,6 @@ public class OutfitRandomizer extends Extension {
 
     private void onConnect(String s, int i, String s1, String s2, HClient hClient) {
         isHCMember = false;
-        packetInfoSupport.sendToServer("ScrGetUserInfo", "habbo_club");
         fetchFigureDate(s);
     }
 
