@@ -168,6 +168,7 @@ public class OutfitRandomizer extends Extension {
 
     private void onConnect(String s, int i, String s1, String s2, HClient hClient) {
         isHCMember = false;
+        checkedHCMemberShip = false;
         fetchFigureDate(s);
     }
 
